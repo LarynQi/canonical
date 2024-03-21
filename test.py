@@ -1,5 +1,6 @@
 import requests
 import random
+import sys
 
 def main(url='http://127.0.0.1:5001/'):
     files = {
@@ -9,12 +10,15 @@ def main(url='http://127.0.0.1:5001/'):
     assert resp.ok, resp.text
 
     resp_json = resp.json()
-    counter = resp_json['counter']
-    hash_certificate = resp_json['password']
-    resp = requests.get(f'{url}report?id={counter}&password={tamper(hash_certificate)}')
+    counter = resp_json['id']
+    key = resp_json['key']
+    resp = requests.get(f'{url}report?id={counter}&key={tamper(key)}')
+    assert not resp.ok, resp.text
+    
+    resp = requests.get(f'{url}report?id=-1&key={key}')
     assert not resp.ok, resp.text
 
-    resp = requests.get(f'{url}report?id={counter}&password={hash_certificate}')
+    resp = requests.get(f'{url}report?id={counter}&key={key}')
     assert resp.ok, resp.text
 
     resp_json = resp.json()
@@ -23,7 +27,7 @@ def main(url='http://127.0.0.1:5001/'):
     net_revenue = resp_json['net-revenue']
     assert gross_revenue - expenses == net_revenue
 
-    print('passed!')
+    print('test passed!')
 
 def tamper(s):
     idx = random.randint(0, len(s) - 1)
@@ -31,4 +35,7 @@ def tamper(s):
     return s[:idx - 1] + val + s[idx + 1:]
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) > 1:
+        main(url=sys.argv[1])
+    else:
+        main()
